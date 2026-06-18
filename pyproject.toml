@@ -1,0 +1,64 @@
+[project]
+name = "research-agent"
+version = "0.1.0"
+description = "Production-grade autonomous Deep Research Agent"
+authors = [
+    { name = "Principal Engineer", email = "engineer@example.com" }
+]
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.1.0",
+    "sqlmodel>=0.0.14",
+    "litellm>=1.20.0",
+    "redis>=5.0.1",
+    "httpx>=0.26.0",
+    "structlog>=24.1.0",
+    "prometheus-client>=0.19.0",
+    "opentelemetry-api>=1.22.0",
+    "opentelemetry-sdk>=1.22.0",
+    "opentelemetry-exporter-otlp>=1.22.0",
+    "opentelemetry-instrumentation-fastapi>=0.43b0",
+    "trafilatura>=1.6.3",
+    "pymupdf>=1.23.21",
+    "playwright>=1.41.0",
+    "pandas>=2.2.0",
+    "beautifulsoup4>=4.12.3",
+    "feedparser>=6.0.10",
+    "waybackpy>=3.0.6",
+    "python-multipart>=0.0.7",
+]
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.5",
+    "pytest-cov>=4.1.0",
+    "black>=24.1.0",
+    "isort>=5.13.0",
+    "mypy>=1.8.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.isort]
+profile = "black"
+line_length = 88

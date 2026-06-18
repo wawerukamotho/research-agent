@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
+.dockerignore
+build
+dist
+*.egg-info
+.pytest_cache
+.env
+frontend/.next
+frontend/node_modules
