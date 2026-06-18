@@ -17,9 +17,16 @@ async def lifespan(app: FastAPI):
     # Startup
     setup_logging()
     setup_observability(app)
+
+    # Shared resources
+    app.state.db_engine = create_async_engine(settings.database_url)
+    app.state.redis = redis.from_url(settings.redis_url)
+
     logger.info("application_started", environment=settings.environment)
     yield
     # Shutdown
+    await app.state.db_engine.dispose()
+    await app.state.redis.close()
     logger.info("application_stopped")
 
 
@@ -36,23 +43,18 @@ async def health_check():
 
 
 @app.get("/ready")
-async def ready_check():
+async def ready_check(request: Request):
     # Check PostgreSQL
     try:
-        engine = create_async_engine(settings.database_url)
-        conn = await engine.connect()
-        await conn.execute(text("SELECT 1"))
-        await conn.close()
-        await engine.dispose()
+        async with request.app.state.db_engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
     except Exception as e:
         logger.error("ready_check_failed_postgres", error=str(e))
         raise HTTPException(status_code=503, detail="Database unreachable")
 
     # Check Redis
     try:
-        r = redis.from_url(settings.redis_url)
-        await r.ping()
-        await r.close()
+        await request.app.state.redis.ping()
     except Exception as e:
         logger.error("ready_check_failed_redis", error=str(e))
         raise HTTPException(status_code=503, detail="Redis unreachable")

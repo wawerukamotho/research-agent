@@ -9,26 +9,23 @@ def test_health_check():
     assert response.status_code == 200
     assert response.json() == {"status": "healthy", "version": "0.1.0"}
 
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 
 def test_ready_check():
-    with patch("main.create_async_engine") as mock_engine, \
-         patch("redis.asyncio.from_url") as mock_redis:
+    # Inject mock state manually since lifespan doesn't run in TestClient by default
+    app.state.db_engine = MagicMock()
+    app.state.redis = AsyncMock()
 
-        # Mock Postgres
-        mock_engine_instance = AsyncMock()
-        mock_engine.return_value = mock_engine_instance
+    # Mock Postgres
+    mock_conn = AsyncMock()
+    app.state.db_engine.connect.return_value.__aenter__.return_value = mock_conn
 
-        mock_conn = AsyncMock()
-        mock_engine_instance.connect.return_value = mock_conn
+    # Mock Redis
+    app.state.redis.ping = AsyncMock()
 
-        # Mock Redis
-        mock_redis_client = AsyncMock()
-        mock_redis.return_value = mock_redis_client
-
-        response = client.get("/ready")
-        assert response.status_code == 200
-        assert response.json() == {"status": "ready"}
+    response = client.get("/ready")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready"}
 
 def test_app_error_handler():
     from scaffold.errors import AppError
