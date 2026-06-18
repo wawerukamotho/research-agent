@@ -12,6 +12,7 @@ from scaffold.logging import setup_logging, logger
 from scaffold.observability import setup_observability
 from scaffold.errors import AppError
 from registry.discovery import discover_tools
+from orchestrator.router import router as orchestrator_router
 
 
 @asynccontextmanager
@@ -42,6 +43,8 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+app.include_router(orchestrator_router)
 
 
 @app.get("/health")
