@@ -1,5 +1,6 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
+from tools.analyze.models import VerifiedClaim
 
 class Citation(BaseModel):
     id: str
@@ -36,6 +37,7 @@ class Outline(BaseModel):
 
 class WriteInput(BaseModel):
     prompt: str
+    verified_claims: Optional[List[VerifiedClaim]] = None
     context: Optional[str] = None
     params: Dict[str, Any] = Field(default_factory=dict)
 

@@ -10,6 +10,10 @@ class LLMAnalysisProvider(AnalysisProvider):
         self.model = model or settings.default_llm_model
 
     async def analyze(self, text: str, task: str, schema: Any, context: str = None) -> Any:
+        # For Phase 10, handle potential None text by using context if documents/claims provided
+        if text is None:
+            text = "Data provided in structured format (documents/claims)."
+
         prompt = f"""
         Task: {task}
 

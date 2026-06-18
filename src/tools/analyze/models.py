@@ -1,8 +1,11 @@
 from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel, Field
+from tools.fetch.models import FetchedDocument
 
 class AnalysisInput(BaseModel):
-    text: str
+    text: Optional[str] = None
+    documents: Optional[List[FetchedDocument]] = None
+    claims: Optional[List['Claim']] = None
     context: Optional[str] = None
     params: Dict[str, Any] = Field(default_factory=dict)
 
