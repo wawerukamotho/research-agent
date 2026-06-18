@@ -23,10 +23,16 @@ class Orchestrator:
         self.is_running = False
 
     async def run(self):
+        from opentelemetry import trace
+        tracer = trace.get_tracer(__name__)
+
         self.is_running = True
         logger.info("orchestrator_started", query=self.request.query)
 
         try:
+            with tracer.start_as_current_span("research_orchestration") as span:
+                span.set_attribute("research.query", self.request.query)
+                span.set_attribute("session.id", str(self.session_manager.session.id))
             # 1. Initial Plan Generation
             await self._generate_initial_plan()
 

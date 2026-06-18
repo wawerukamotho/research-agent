@@ -22,7 +22,7 @@ class FactCheckerSubagent(BaseSubagent):
         ]
         super().__init__(name="FactChecker", scope=scope)
 
-    async def run(self, input_data: FactCheckerInput) -> FactCheckerOutput:
+    async def _run_logic(self, input_data: FactCheckerInput) -> FactCheckerOutput:
         # In Phase 7, we implement the logic for the subagent loop.
         # This will eventually be driven by an LLM that chooses tools from self.tools
         # and manages self.context.

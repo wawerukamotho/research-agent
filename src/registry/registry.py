@@ -45,8 +45,15 @@ class ToolRegistry:
         return schemas
 
     async def execute(self, tool_id: str, input_params: Dict[str, Any]) -> Any:
+        from scaffold.metrics import TOOL_EXECUTION_COUNT, TOOL_LATENCY
+        import time
+        from opentelemetry import trace
+
+        tracer = trace.get_tracer(__name__)
+
         tool = self.get_tool(tool_id)
         if not tool:
+            TOOL_EXECUTION_COUNT.labels(tool_id=tool_id, status="not_found").inc()
             raise ToolError(f"Tool {tool_id} not found")
 
         # Validate input
@@ -56,9 +63,12 @@ class ToolRegistry:
             raise AppValidationError(f"Invalid input for tool {tool_id}", details=e.errors())
 
         # Execute
+        start_time = time.perf_counter()
         try:
-            logger.info("executing_tool", tool_id=tool_id)
-            result = await tool.run(validated_input)
+            with tracer.start_as_current_span(f"tool_exec:{tool_id}") as span:
+                span.set_attribute("tool.id", tool_id)
+                logger.info("executing_tool", tool_id=tool_id)
+                result = await tool.run(validated_input)
 
             # Validate output
             if not isinstance(result, tool.metadata.output_schema):
@@ -68,8 +78,13 @@ class ToolRegistry:
                 else:
                     raise ToolError(f"Tool {tool_id} returned invalid output type")
 
+            latency = time.perf_counter() - start_time
+            TOOL_LATENCY.labels(tool_id=tool_id).observe(latency)
+            TOOL_EXECUTION_COUNT.labels(tool_id=tool_id, status="success").inc()
+
             return result
         except Exception as e:
+            TOOL_EXECUTION_COUNT.labels(tool_id=tool_id, status="error").inc()
             logger.error("tool_execution_failed", tool_id=tool_id, error=str(e))
             if isinstance(e, ToolError):
                 raise e
