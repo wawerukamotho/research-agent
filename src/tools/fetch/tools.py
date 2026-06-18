@@ -100,7 +100,17 @@ class ExtractMainTextTool(FetchToolBase): pass
     input_schema=FetchInput,
     output_schema=FetchResponse
 )
-class ExtractTablesTool(FetchToolBase): pass
+class ExtractTablesTool(FetchToolBase):
+    async def run(self, input_data: FetchInput) -> FetchResponse:
+        provider = get_fetch_provider()
+        tables = await provider.extract_tables(input_data.url)
+        import json
+        return FetchResponse(document=FetchedDocument(
+            url=input_data.url,
+            content=json.dumps(tables),
+            content_type="application/json",
+            metadata={"table_count": len(tables)}
+        ))
 
 @tool(
     name="extract_metadata",
@@ -118,7 +128,11 @@ class ExtractMetadataTool(FetchToolBase): pass
     input_schema=FetchInput,
     output_schema=FetchResponse
 )
-class ScreenshotPageTool(FetchToolBase): pass
+class ScreenshotPageTool(FetchToolBase):
+    async def run(self, input_data: FetchInput) -> FetchResponse:
+        provider = get_fetch_provider()
+        doc = await provider.screenshot(input_data.url)
+        return FetchResponse(document=doc)
 
 @tool(
     name="fetch_wayback",
