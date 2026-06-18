@@ -19,7 +19,7 @@ class SectionWriterSubagent(BaseSubagent):
         ]
         super().__init__(name="SectionWriter", scope=scope)
 
-    async def run(self, input_data: SectionWriterInput) -> SectionWriterOutput:
+    async def _run_logic(self, input_data: SectionWriterInput) -> SectionWriterOutput:
         # Mock logic:
         # 1. Summarize context
         # 2. Draft section

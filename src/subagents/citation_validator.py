@@ -24,7 +24,7 @@ class CitationValidatorSubagent(BaseSubagent):
         ]
         super().__init__(name="CitationValidator", scope=scope)
 
-    async def run(self, input_data: CitationValidatorInput) -> CitationValidatorOutput:
+    async def _run_logic(self, input_data: CitationValidatorInput) -> CitationValidatorOutput:
         results = []
         for cite in input_data.citations:
             results.append(ValidationResult(

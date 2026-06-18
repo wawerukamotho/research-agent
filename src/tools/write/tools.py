@@ -124,6 +124,34 @@ class ExportJsonTool(BaseTool):
         return WriteResponse(content=input_data.report.model_dump_json())
 
 @tool(
+    name="export_pdf",
+    namespace="write",
+    description="Export the research report to PDF format.",
+    input_schema=ReportResponse,
+    output_schema=WriteResponse
+)
+class ExportPdfTool(BaseTool):
+    async def run(self, input_data: ReportResponse) -> WriteResponse:
+        from tools.write.export import generate_pdf
+        import base64
+        pdf_bytes = generate_pdf(input_data.report)
+        return WriteResponse(content=base64.b64encode(pdf_bytes).decode('utf-8'))
+
+@tool(
+    name="export_docx",
+    namespace="write",
+    description="Export the research report to DOCX format.",
+    input_schema=ReportResponse,
+    output_schema=WriteResponse
+)
+class ExportDocxTool(BaseTool):
+    async def run(self, input_data: ReportResponse) -> WriteResponse:
+        from tools.write.export import generate_docx
+        import base64
+        docx_bytes = generate_docx(input_data.report)
+        return WriteResponse(content=base64.b64encode(docx_bytes).decode('utf-8'))
+
+@tool(
     name="create_outline",
     namespace="write",
     description="Create an outline for the research report.",
