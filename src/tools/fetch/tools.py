@@ -3,12 +3,22 @@ from registry.base import BaseTool
 from registry.decorator import tool
 from tools.fetch.models import FetchInput, BatchFetchInput, FetchResponse, BatchFetchResponse, FetchedDocument
 from tools.fetch.provider import DefaultFetchProvider
+import httpx
 
-_provider = DefaultFetchProvider()
+_provider_instance = None
+
+def get_fetch_provider() -> DefaultFetchProvider:
+    global _provider_instance
+    if _provider_instance is None:
+        # This will be initialized with a pooled client in a real app flow if needed,
+        # or it can remain as is for simple cases.
+        _provider_instance = DefaultFetchProvider()
+    return _provider_instance
 
 class FetchToolBase(BaseTool):
     async def run(self, input_data: FetchInput) -> FetchResponse:
-        doc = await _provider.fetch(input_data.url, input_data.params)
+        provider = get_fetch_provider()
+        doc = await provider.fetch(input_data.url, input_data.params)
         return FetchResponse(document=doc)
 
 @tool(
@@ -128,7 +138,8 @@ class FetchWaybackTool(FetchToolBase): pass
 )
 class BatchFetchTool(BaseTool):
     async def run(self, input_data: BatchFetchInput) -> BatchFetchResponse:
-        docs = await _provider.fetch_batch(input_data.urls)
+        provider = get_fetch_provider()
+        docs = await provider.fetch_batch(input_data.urls)
         # Filter out exceptions if gather returned any
         valid_docs = [d for d in docs if isinstance(d, FetchedDocument)]
         return BatchFetchResponse(documents=valid_docs)

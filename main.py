@@ -5,11 +5,13 @@ import uvicorn
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 import redis.asyncio as redis
+import httpx
 
 from scaffold.config import settings
 from scaffold.logging import setup_logging, logger
 from scaffold.observability import setup_observability
 from scaffold.errors import AppError
+from registry.discovery import discover_tools
 
 
 @asynccontextmanager
@@ -21,12 +23,17 @@ async def lifespan(app: FastAPI):
     # Shared resources
     app.state.db_engine = create_async_engine(settings.database_url)
     app.state.redis = redis.from_url(settings.redis_url)
+    app.state.http_client = httpx.AsyncClient(follow_redirects=True)
+
+    # Tool discovery
+    discover_tools()
 
     logger.info("application_started", environment=settings.environment)
     yield
     # Shutdown
     await app.state.db_engine.dispose()
-    await app.state.redis.close()
+    await app.state.redis.aclose()
+    await app.state.http_client.aclose()
     logger.info("application_stopped")
 
 

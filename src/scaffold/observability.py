@@ -28,4 +28,8 @@ def setup_observability(app: FastAPI):
     FastAPIInstrumentor.instrument_app(app)
 
     # Start Prometheus metrics server
-    start_http_server(settings.prometheus_port)
+    try:
+        start_http_server(settings.prometheus_port)
+    except OSError:
+        # Port already in use, likely in tests
+        pass
