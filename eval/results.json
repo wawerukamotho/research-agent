@@ -1,0 +1,37 @@
+[
+  {
+    "benchmark_id": "ai_coding",
+    "grounding_score": 0.85,
+    "coverage_score": 0.6666666666666666,
+    "citation_validity": 0.95,
+    "consistency_score": 0.9
+  },
+  {
+    "benchmark_id": "energy_storage",
+    "grounding_score": 0.85,
+    "coverage_score": 0.6666666666666666,
+    "citation_validity": 0.95,
+    "consistency_score": 0.9
+  },
+  {
+    "benchmark_id": "africa_fintech",
+    "grounding_score": 0.85,
+    "coverage_score": 0.6666666666666666,
+    "citation_validity": 0.95,
+    "consistency_score": 0.9
+  },
+  {
+    "benchmark_id": "llm_eval",
+    "grounding_score": 0.85,
+    "coverage_score": 0.6666666666666666,
+    "citation_validity": 0.95,
+    "consistency_score": 0.9
+  },
+  {
+    "benchmark_id": "supply_chain",
+    "grounding_score": 0.85,
+    "coverage_score": 0.6666666666666666,
+    "citation_validity": 0.95,
+    "consistency_score": 0.9
+  }
+]

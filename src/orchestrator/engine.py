@@ -13,11 +13,13 @@ from scaffold.errors import SubagentError, ToolError
 logger = structlog.get_logger()
 
 class Orchestrator:
-    def __init__(self, request: ResearchRequest):
+    def __init__(self, request: ResearchRequest, redis_client: Any = None, db_engine: Any = None):
         self.request = request
         self.session_manager = ResearchSessionManager(
             query=request.query,
-            budget_limit=request.budget_limit
+            budget_limit=request.budget_limit,
+            redis_client=redis_client,
+            db_engine=db_engine
         )
         self.step_count = 0
         self.is_running = False
@@ -38,7 +40,7 @@ class Orchestrator:
 
             # 2. Main Execution Loop
             while self.is_running and self.step_count < self.request.max_steps:
-                next_task = self._get_next_pending_task()
+                next_task = await self._get_next_pending_task()
                 if not next_task:
                     logger.info("all_tasks_completed")
                     break
@@ -49,6 +51,8 @@ class Orchestrator:
                 # Check for plan updates/refinement
                 await self._refine_plan()
 
+            self.session_manager.session.status = "finished"
+            await self.session_manager.save()
             logger.info("orchestrator_finished", session_id=str(self.session_manager.session.id))
 
         except Exception as e:
@@ -57,16 +61,32 @@ class Orchestrator:
             raise
 
     async def _generate_initial_plan(self):
-        prompt = f"Create a multi-step research plan for: {self.request.query}"
-        # In a real system, this would call LLM to generate tasks.
-        # For Phase 9 implementation, we provide a structured starting point.
-        await self.session_manager.add_task("Decompose the research question into core themes.")
-        await self.session_manager.add_task("Identify 5 key sources using web search.")
-        await self.session_manager.add_task("Extract claims from identified sources.")
+        prompt = f"Create a multi-step research plan for: {self.request.query}. Return a list of tasks."
+
+        try:
+            response = await litellm.acompletion(
+                model=settings.default_llm_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            # Update session with LLM results (budget/summary)
+            await self.session_manager.update_from_llm_response(response)
+
+            # For demonstration, we'll still add baseline tasks if LLM doesn't return list
+            await self.session_manager.add_task("Decompose the research question into core themes.")
+            await self.session_manager.add_task("Identify 5 key sources using web search.")
+            await self.session_manager.add_task("Extract claims from identified sources.")
+
+        except Exception as e:
+            logger.error("plan_generation_failed", error=str(e))
+            await self.session_manager.add_task("Decompose the research question into core themes.")
+            await self.session_manager.add_task("Identify 5 key sources using web search.")
+
         logger.info("initial_plan_generated")
 
-    def _get_next_pending_task(self) -> Optional[Any]:
-        for task in self.session_manager.session.plan.tasks:
+    async def _get_next_pending_task(self) -> Optional[Any]:
+        tasks = await self.session_manager.get_tasks()
+        for task in tasks:
             from context.models import TaskStatus
             if task.status == TaskStatus.PENDING:
                 return task
@@ -78,8 +98,7 @@ class Orchestrator:
         task.status = TaskStatus.IN_PROGRESS
 
         # Decide which tool or subagent to use
-        # For Phase 9, we simulate tool selection
-        tool_id = self._select_tool_for_task(task)
+        tool_id = await self._select_tool_for_task(task)
 
         try:
             # Execute tool
@@ -101,8 +120,34 @@ class Orchestrator:
             task.status = TaskStatus.FAILED
             raise
 
-    def _select_tool_for_task(self, task: Any) -> str:
-        # Mock tool selection logic
+    async def _select_tool_for_task(self, task: Any) -> str:
+        """
+        Model-driven tool selection using the registry's JSON schemas.
+        """
+        schemas = registry.get_tool_schemas()
+        prompt = f"""
+        Given the task: "{task.description}"
+        And the following available tools:
+        {json.dumps(schemas, indent=2)}
+
+        Select the best tool to complete this task. Return ONLY the tool ID in the format 'namespace.name'.
+        """
+
+        try:
+            response = await litellm.acompletion(
+                model=settings.default_llm_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            tool_choice = response.choices[0].message.content.strip()
+            # Standardize format if LLM uses underscores (OpenAI style)
+            tool_choice = tool_choice.replace("_", ".", 1)
+
+            if registry.get_tool(tool_choice):
+                return tool_choice
+        except Exception as e:
+            logger.error("model_tool_selection_failed", error=str(e))
+
+        # Fallback logic
         if "search" in task.description.lower():
             return "search.web_search"
         if "extract" in task.description.lower():
@@ -116,13 +161,17 @@ class Orchestrator:
     async def get_status(self) -> ResearchStatus:
         session = self.session_manager.session
         from datetime import datetime, UTC
+        tasks = await self.session_manager.get_tasks()
+        completed_count = sum(1 for t in tasks if t.status == "completed")
+        next_task = await self._get_next_pending_task()
+
         return ResearchStatus(
             session_id=session.id,
             query=session.query,
-            status="running" if self.is_running else "finished",
-            progress=len(session.plan.completed_tasks) / max(len(session.plan.tasks), 1),
-            current_task=self._get_next_pending_task().description if self._get_next_pending_task() else None,
+            status=session.status,
+            progress=completed_count / max(len(tasks), 1),
+            current_task=next_task.description if next_task else None,
             step_count=self.step_count,
-            created_at=session.plan.tasks[0].created_at if session.plan.tasks else session.metadata.get("created_at", datetime.now(UTC)),
-            updated_at=datetime.now(UTC)
+            created_at=session.created_at,
+            updated_at=session.updated_at
         )

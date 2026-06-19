@@ -27,6 +27,12 @@ async def lifespan(app: FastAPI):
     app.state.redis = redis.from_url(settings.redis_url)
     app.state.http_client = httpx.AsyncClient(follow_redirects=True)
 
+    # Database initialization
+    if settings.environment != "test":
+        from sqlmodel import SQLModel
+        async with app.state.db_engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+
     # Tool discovery
     discover_tools()
 

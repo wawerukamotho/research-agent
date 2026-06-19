@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ai_coding",
+    "query": "AI Coding Agents",
+    "expected_claims": ["increase developer productivity", "reduce boilerplate", "introduce security vulnerabilities"],
+    "expected_sources": ["GitHub", "Stack Overflow", "Tech News"]
+  },
+  {
+    "id": "energy_storage",
+    "query": "Renewable Energy Storage",
+    "expected_claims": ["Lithium-ion dominance", "Solid-state battery potential", "Grid stability requirements"],
+    "expected_sources": ["Department of Energy", "Nature Energy", "IEA"]
+  },
+  {
+    "id": "africa_fintech",
+    "query": "African Fintech Ecosystem",
+    "expected_claims": ["Mobile money growth", "regulatory challenges", "investment trends in Nigeria and Kenya"],
+    "expected_sources": ["World Bank", "TechCrunch Africa", "Central Bank reports"]
+  },
+  {
+    "id": "llm_eval",
+    "query": "LLM Evaluation Methods",
+    "expected_claims": ["Human-in-the-loop", "Benchmark leakage", "Model-based evaluation"],
+    "expected_sources": ["arXiv", "OpenAI blog", "Anthropic research"]
+  },
+  {
+    "id": "supply_chain",
+    "query": "Cybersecurity Supply Chain Risks",
+    "expected_claims": ["Software Bill of Materials (SBOM)", "Dependency vulnerabilities", "State-sponsored attacks"],
+    "expected_sources": ["NIST", "CISA", "Security research firms"]
+  }
+]

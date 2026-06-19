@@ -3,12 +3,15 @@ import structlog
 from pydantic import BaseModel, ValidationError
 from registry.base import BaseTool, ToolMetadata
 from scaffold.errors import ToolError, ValidationError as AppValidationError
+from scaffold.resilience import RetryManager, RateLimiter
 
 logger = structlog.get_logger()
 
 class ToolRegistry:
     def __init__(self):
         self._tools: Dict[str, BaseTool] = {}
+        self._retry_manager = RetryManager()
+        self._rate_limiter = RateLimiter()
 
     def register(self, tool: BaseTool):
         tool_id = f"{tool.metadata.namespace}.{tool.metadata.name}"
@@ -65,10 +68,11 @@ class ToolRegistry:
         # Execute
         start_time = time.perf_counter()
         try:
+            await self._rate_limiter.wait()
             with tracer.start_as_current_span(f"tool_exec:{tool_id}") as span:
                 span.set_attribute("tool.id", tool_id)
                 logger.info("executing_tool", tool_id=tool_id)
-                result = await tool.run(validated_input)
+                result = await self._retry_manager.execute(tool.run, validated_input)
 
             # Validate output
             if not isinstance(result, tool.metadata.output_schema):

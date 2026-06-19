@@ -9,14 +9,17 @@ from orchestrator.engine import Orchestrator
 
 router = APIRouter(prefix="/research", tags=["research"])
 
-# Simple in-memory store for active orchestrators
-_active_jobs: Dict[UUID, Orchestrator] = {}
-
+# Research job registry relies on persistent state
 @router.post("", response_model=ResearchStatus)
 @router.post("/", response_model=ResearchStatus)
-async def start_research(request: ResearchRequest, background_tasks: BackgroundTasks):
-    orchestrator = Orchestrator(request)
-    _active_jobs[orchestrator.session_manager.session.id] = orchestrator
+async def start_research(request: Request, research_request: ResearchRequest, background_tasks: BackgroundTasks):
+    orchestrator = Orchestrator(
+        research_request,
+        redis_client=request.app.state.redis,
+        db_engine=request.app.state.db_engine
+    )
+    # Persist session immediately
+    await orchestrator.session_manager.save()
 
     # Run in background
     background_tasks.add_task(orchestrator.run)
@@ -24,18 +27,36 @@ async def start_research(request: ResearchRequest, background_tasks: BackgroundT
     return await orchestrator.get_status()
 
 @router.get("/{session_id}", response_model=ResearchStatus)
-async def get_research_status(session_id: UUID):
-    if session_id not in _active_jobs:
+async def get_research_status(request: Request, session_id: UUID):
+    # Try resume from database
+    try:
+        orchestrator = Orchestrator(
+            request=ResearchRequest(query=""),
+            redis_client=request.app.state.redis,
+            db_engine=request.app.state.db_engine
+        )
+        orchestrator.session_manager = await ResearchSessionManager.resume(
+            session_id,
+            db_engine=request.app.state.db_engine
+        )
+        return await orchestrator.get_status()
+    except Exception:
         raise HTTPException(status_code=404, detail="Research job not found")
-
-    return await _active_jobs[session_id].get_status()
 
 @router.get("/{session_id}/download/{format}")
-async def download_report(session_id: UUID, format: Literal["md", "json", "pdf", "docx"]):
-    if session_id not in _active_jobs:
+async def download_report(request: Request, session_id: UUID, format: Literal["md", "json", "pdf", "docx"]):
+    try:
+        orchestrator = Orchestrator(
+            request=ResearchRequest(query=""),
+            redis_client=request.app.state.redis,
+            db_engine=request.app.state.db_engine
+        )
+        orchestrator.session_manager = await ResearchSessionManager.resume(
+            session_id,
+            db_engine=request.app.state.db_engine
+        )
+    except Exception:
         raise HTTPException(status_code=404, detail="Research job not found")
-
-    orchestrator = _active_jobs[session_id]
     from tools.write.models import ReportResponse, ResearchReport, ExecutiveSummary
 
     report = ResearchReport(
