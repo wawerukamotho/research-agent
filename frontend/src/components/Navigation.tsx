@@ -1,9 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { api, ResearchStatus } from '@/lib/api';
-import { Search, Loader2, FileText, FileCode, FileType, BarChart3, Clock, LayoutDashboard } from 'lucide-react';
-import AgentTraceViewer from './AgentTraceViewer';
+import { BarChart3, Clock, LayoutDashboard } from 'lucide-react';
 
 export default function Navigation({ activeTab, setTab }: { activeTab: string, setTab: (t: string) => void }) {
   return (
