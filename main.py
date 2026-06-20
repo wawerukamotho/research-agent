@@ -3,12 +3,11 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
-import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 import redis.asyncio as redis
 import httpx
-
+import os
 from scaffold.config import settings
 from scaffold.logging import setup_logging, logger
 from scaffold.observability import setup_observability
@@ -16,6 +15,8 @@ from scaffold.errors import AppError
 from registry.discovery import discover_tools
 from orchestrator.router import router as orchestrator_router
 
+if settings.openrouter_api_key:
+    os.environ["OPENROUTER_API_KEY"] = settings.openrouter_api_key
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

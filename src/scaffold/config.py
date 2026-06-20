@@ -28,8 +28,9 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
 
     # LLM Configuration
-    default_llm_model: str = "anthropic/claude-3-5-sonnet-20240620"
-    fallback_llm_model: str = "openai/gpt-4o"
+    default_llm_model: str = "openrouter/free"
+    fallback_llm_model: str = "openrouter/free"
+    openrouter_api_key: Optional[str] = None
 
     # Observability
     otel_exporter_otlp_endpoint: str = "http://jaeger:4317"
