@@ -12,8 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install python dependencies
 COPY pyproject.toml .
 COPY src/ src/
-RUN pip install --no-cache-dir . && \
-    playwright install --with-deps chromium
+RUN apt-get update && \
+    pip install --no-cache-dir . && \
+    playwright install --with-deps chromium && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy application code
 COPY . .
