@@ -22,6 +22,9 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/research
       - REDIS_URL=redis://redis:6379/0
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DEFAULT_LLM_MODEL=${DEFAULT_LLM_MODEL:-openrouter/anthropic/claude-3.5-sonnet}
+      - FALLBACK_LLM_MODEL=${FALLBACK_LLM_MODEL:-openrouter/openai/gpt-4o}
     depends_on:
       - postgres
       - redis

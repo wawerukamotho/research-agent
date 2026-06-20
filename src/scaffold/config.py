@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     # API Keys
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    openrouter_api_key: Optional[str] = None
     google_api_key: Optional[str] = None
     serper_api_key: Optional[str] = None
     tavily_api_key: Optional[str] = None
