@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
+import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 import redis.asyncio as redis
@@ -24,6 +25,20 @@ async def lifespan(app: FastAPI):
 
     # Shared resources
     app.state.db_engine = create_async_engine(settings.database_url)
+    MAX_DB_CONNECT_RETRIES = 10
+    INITIAL_BACKOFF = 0.5  # seconds
+
+    for attempt in range(1, MAX_DB_CONNECT_RETRIES + 1):
+     
+     try:
+        async with app.state.db_engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        break
+     except Exception as exc:
+        if attempt == MAX_DB_CONNECT_RETRIES:
+            raise
+        backoff = INITIAL_BACKOFF * (2 ** (attempt - 1))
+        await asyncio.sleep(min(backoff, 10))
     app.state.redis = redis.from_url(settings.redis_url)
     app.state.http_client = httpx.AsyncClient(follow_redirects=True)
 
