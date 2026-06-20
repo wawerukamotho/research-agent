@@ -53,8 +53,9 @@ class ResearchSessionManager:
         async with AsyncSession(self.db_engine) as db_session:
             db_session.add(checkpoint)
             await db_session.commit()
+            await db_session.refresh(checkpoint)
+            await self.checkpoint.save_checkpoint(self.session.id, checkpoint)
 
-        await self.checkpoint.save_checkpoint(self.session.id, checkpoint)
         await self.save()
 
     async def update_from_llm_response(self, response: Any):
