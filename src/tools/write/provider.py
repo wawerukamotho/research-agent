@@ -1,6 +1,6 @@
 import json
 from typing import Any
-import litellm
+from scaffold.llm import safe_acompletion
 from tools.write.base import WriteProvider
 from scaffold.config import settings
 from scaffold.logging import logger
@@ -24,7 +24,7 @@ class LLMWriteProvider(WriteProvider):
         """
 
         try:
-            response = await litellm.acompletion(
+            response = await safe_acompletion(
                 model=self.model,
                 messages=[{"role": "user", "content": full_prompt}],
                 response_format={"type": "json_object"}

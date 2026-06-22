@@ -2,8 +2,8 @@ import json
 import asyncio
 from typing import List, Dict, Any, Optional
 from uuid import UUID
-import litellm
 import structlog
+from scaffold.llm import safe_acompletion
 from orchestrator.models import ResearchRequest, ResearchStatus, OrchestratorEvent
 from context.session import ResearchSessionManager
 from registry.registry import registry
@@ -64,7 +64,7 @@ class Orchestrator:
         prompt = f"Create a multi-step research plan for: {self.request.query}. Return a list of tasks."
 
         try:
-            response = await litellm.acompletion(
+            response = await safe_acompletion(
                 model=settings.default_llm_model,
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"}
@@ -134,7 +134,7 @@ class Orchestrator:
         """
 
         try:
-            response = await litellm.acompletion(
+            response = await safe_acompletion(
                 model=settings.default_llm_model,
                 messages=[{"role": "user", "content": prompt}]
             )
