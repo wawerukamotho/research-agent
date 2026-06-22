@@ -1,5 +1,5 @@
 from typing import List
-import litellm
+from scaffold.llm import safe_acompletion
 from scaffold.config import settings
 from scaffold.logging import logger
 
@@ -23,7 +23,7 @@ class RollingSummaryManager:
         """
 
         try:
-            response = await litellm.acompletion(
+            response = await safe_acompletion(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}]
             )

@@ -1,6 +1,6 @@
 import json
 from typing import Any, Dict, List
-import litellm
+from scaffold.llm import safe_acompletion
 from tools.analyze.base import AnalysisProvider
 from scaffold.config import settings
 from scaffold.logging import logger
@@ -28,7 +28,7 @@ class LLMAnalysisProvider(AnalysisProvider):
         """
 
         try:
-            response = await litellm.acompletion(
+            response = await safe_acompletion(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"}
